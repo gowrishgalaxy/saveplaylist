@@ -102,15 +102,17 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             li.appendChild(nameSpan);
-            li.draggable = true;
             li.dataset.index = index;
 
             if (activePlaylist && activePlaylist.name === playlist.name) {
                 li.classList.add('active');
             }
 
-            // The Recycle Bin playlist cannot be deleted
-            if (playlist.name !== RECYCLE_BIN_NAME) {
+            // The Recycle Bin playlist cannot be deleted or dragged
+            if (playlist.name === RECYCLE_BIN_NAME) {
+                li.classList.add('recycle-bin-playlist');
+            } else {
+                li.draggable = true;
                 const deleteBtn = document.createElement('button');
                 deleteBtn.textContent = 'Delete';
                 deleteBtn.classList.add('delete-btn');
@@ -120,6 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 li.appendChild(deleteBtn);
             }
+
             li.addEventListener('click', () => selectPlaylist(index));
             playlistList.appendChild(li);
         });
@@ -237,20 +240,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
             li.appendChild(contentDiv);
 
-            // Create delete button
-            const deleteBtn = document.createElement('button');
+            // --- Action Buttons ---
+            const buttonContainer = document.createElement('div');
+            buttonContainer.classList.add('link-actions');
+
             if (activePlaylist.name === RECYCLE_BIN_NAME) {
-                deleteBtn.textContent = 'Delete Forever';
-                deleteBtn.classList.add('perm-delete-btn');
+                li.classList.add('deleted-item'); // For special styling
+
+                // Display original playlist info
+                if (linkData.originalPlaylistName) {
+                    const originalLocation = document.createElement('p');
+                    originalLocation.classList.add('original-location');
+                    originalLocation.textContent = `(From: ${linkData.originalPlaylistName})`;
+                    contentDiv.appendChild(originalLocation);
+                }
+
+                // Create Restore button
+                const restoreBtn = document.createElement('button');
+                restoreBtn.textContent = 'Restore';
+                restoreBtn.classList.add('restore-btn');
+                restoreBtn.addEventListener('click', (e) => { e.stopPropagation(); restoreLink(index); });
+                buttonContainer.appendChild(restoreBtn);
+
+                // Create permanent delete button
+                const permDeleteBtn = document.createElement('button');
+                permDeleteBtn.textContent = 'Delete Forever';
+                permDeleteBtn.classList.add('perm-delete-btn');
+                permDeleteBtn.addEventListener('click', (e) => { e.stopPropagation(); deleteLink(index); });
+                buttonContainer.appendChild(permDeleteBtn);
+
             } else {
+                // Create regular delete button for normal playlists
+                const deleteBtn = document.createElement('button');
                 deleteBtn.textContent = 'Delete';
                 deleteBtn.classList.add('delete-btn');
+                deleteBtn.addEventListener('click', (e) => { e.stopPropagation(); deleteLink(index); });
+                buttonContainer.appendChild(deleteBtn);
             }
-            deleteBtn.addEventListener('click', () => {
-                deleteLink(index);
-            });
 
-            li.appendChild(deleteBtn);
+            li.appendChild(buttonContainer);
             linkList.appendChild(li);
         });
     }
@@ -289,6 +317,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (recycleBinPlaylist && playlistToDelete.links.length > 0) {
             const linksToMove = playlistToDelete.links;
             linksToMove.forEach(linkToMove => {
+                // Add original playlist info before moving
+                linkToMove.originalPlaylistName = playlistToDelete.name;
                 // Prevent duplicates in the recycle bin
                 if (!recycleBinPlaylist.links.some(existingLink => existingLink.url === linkToMove.url)) {
                     recycleBinPlaylist.links.push(linkToMove);
@@ -351,15 +381,66 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             activePlaylist.links.splice(index, 1);
         } else {
+            if (!confirm(`Are you sure you want to move this link to the Recycle Bin?\n\n"${activePlaylist.links[index].title}"`)) {
+                return;
+            }
             // Otherwise, move it to the recycle bin
             const recycleBinPlaylist = playlists.find(p => p.name === RECYCLE_BIN_NAME);
             const [deletedLink] = activePlaylist.links.splice(index, 1);
-            
+
+            // Add original playlist info
+            deletedLink.originalPlaylistName = activePlaylist.name;
+
             // To prevent duplicates in the recycle bin
             if (recycleBinPlaylist && !recycleBinPlaylist.links.some(link => link.url === deletedLink.url)) {
                 recycleBinPlaylist.links.push(deletedLink);
             }
         }
+        saveAndRender();
+    }
+
+    function restoreLink(indexInBin) {
+        const recycleBinPlaylist = playlists.find(p => p.name === RECYCLE_BIN_NAME);
+        if (!recycleBinPlaylist || !recycleBinPlaylist.links[indexInBin]) return;
+
+        // Remove the link from the recycle bin
+        const [linkToRestore] = recycleBinPlaylist.links.splice(indexInBin, 1);
+        const originalName = linkToRestore.originalPlaylistName;
+
+        // Clean up the object before restoring
+        delete linkToRestore.originalPlaylistName;
+
+        if (!originalName) {
+            // Fallback: if for some reason there's no original playlist name,
+            // move it to the first available playlist that is not the bin.
+            const firstPlaylist = playlists.find(p => p.name !== RECYCLE_BIN_NAME);
+            if (firstPlaylist) {
+                firstPlaylist.links.push(linkToRestore);
+            } else {
+                // If no other playlist exists, create one with a default name
+                const newPlaylist = { name: "Restored Links", links: [linkToRestore] };
+                playlists.push(newPlaylist);
+            }
+            alert('Link restored to the first available playlist as its original playlist was not found.');
+            saveAndRender();
+            return;
+        }
+
+        let targetPlaylist = playlists.find(p => p.name === originalName);
+
+        // If the original playlist was deleted, re-create it.
+        if (!targetPlaylist) {
+            targetPlaylist = { name: originalName, links: [] };
+            playlists.push(targetPlaylist);
+        }
+
+        // Add the link to the target playlist, preventing duplicates
+        if (!targetPlaylist.links.some(link => link.url === linkToRestore.url)) {
+            targetPlaylist.links.push(linkToRestore);
+        } else {
+            alert(`Link "${linkToRestore.title}" already exists in "${targetPlaylist.name}" and was not restored.`);
+        }
+
         saveAndRender();
     }
 
