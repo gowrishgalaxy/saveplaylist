@@ -1,0 +1,343 @@
+/* Basic Reset & Body Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #f4f7f6;
+    color: #333;
+    line-height: 1.6;
+}
+
+/* Header */
+header {
+    background-color: #075E54; /* WhatsApp Green */
+    color: #fff;
+    position: relative; /* For positioning header button */
+    text-align: center;
+    padding: 1.5rem 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+header h1 {
+    margin-bottom: 0.5rem;
+}
+
+/* Main Container */
+.container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Playlist Manager & Details Sections */
+.playlist-manager,
+.playlist-details-view {
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+}
+
+.playlist-manager {
+    flex: 1;
+    min-width: 300px;
+}
+
+.playlist-details-view {
+    flex: 2;
+    min-width: 400px;
+}
+
+.playlist-details-view.hidden {
+    display: none;
+}
+
+h2 {
+    border-bottom: 2px solid #ECE5DD; /* WhatsApp Chat BG */
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+    color: #128C7E; /* WhatsApp Teal */
+}
+
+.create-playlist,
+.add-link {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Inputs and Buttons */
+input[type="text"], input[type="url"] {
+    flex-grow: 1;
+    padding: 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+
+input[type="text"]:focus, input[type="url"]:focus {
+    outline: none;
+    border-color: #25D366;
+    box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.2);
+}
+
+button {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    background-color: #25D366; /* WhatsApp Action Green */
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    transition: background-color 0.2s ease-in-out;
+}
+
+button:hover {
+    background-color: #128C7E; /* WhatsApp Teal */
+}
+
+button:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Lists */
+#playlist-list, #link-list {
+    list-style: none;
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+#playlist-list li {
+    padding: 0.8rem;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#playlist-list li:hover, #playlist-list li.active {
+    background-color: #ECE5DD;
+}
+
+/* Playlist Name Editing */
+.playlist-name-span {
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border-radius: 4px;
+    padding: 0.25rem;
+    margin: -0.25rem;
+    flex-grow: 1;
+    word-break: break-word;
+}
+
+.playlist-name-span:hover {
+    background-color: #fff;
+}
+
+.edit-playlist-input {
+    flex-grow: 1;
+    font-size: 1rem;
+    padding: 0.25rem;
+    margin: -0.25rem;
+    border: 1px solid #25D366;
+    border-radius: 4px;
+    font-family: inherit;
+}
+
+/* Default style for list items, used for "empty" messages */
+#link-list li {
+    padding: 1rem;
+    color: #666;
+    text-align: center;
+}
+
+/* New styles for link previews */
+.link-card {
+    background-color: #fff;
+    border: 1px solid #e1e8ed;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    padding-left: 0.5rem; /* Make space for serial number */
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    transition: box-shadow 0.2s;
+    text-align: left;
+}
+
+.link-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Styles for cards that do not have a thumbnail image */
+.link-card.no-thumbnail {
+    /* Vertically center the content and button when there's no tall image */
+    align-items: center;
+}
+
+.link-card.no-thumbnail .link-content h4 {
+    /* Make the title more prominent as it's the main visual element */
+    font-size: 1.2rem;
+    color: #128C7E; /* Use the theme's teal color for emphasis */
+    margin-bottom: 0.25rem;
+}
+
+.link-card img {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 8px;
+    flex-shrink: 0;
+    border: 1px solid #eee;
+    background-color: #f4f7f6; /* Placeholder color */
+}
+
+.link-card .link-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0; /* Important for flexbox text wrapping */
+}
+
+.link-card .link-content h4.editable-title {
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border-radius: 4px;
+    padding: 0.25rem;
+    margin: -0.25rem; /* Counteract padding to maintain layout */
+}
+
+.link-card .link-content h4.editable-title:hover {
+    background-color: #ECE5DD; /* Use the same hover as playlist items */
+}
+
+.edit-title-input {
+    width: 100%;
+    font-size: 1.1rem;
+    font-weight: bold; /* Match h4 */
+    padding: 0.25rem;
+    margin: -0.25rem; /* Match h4 */
+    border: 1px solid #25D366;
+    border-radius: 4px;
+    font-family: inherit;
+    color: #14171a;
+    background-color: #fff;
+}
+
+.link-card .link-content h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #14171a;
+}
+
+.link-card .link-content a {
+    color: #657786;
+    text-decoration: none;
+    font-size: 0.9rem;
+    word-break: break-all;
+}
+
+.link-card .link-content a:hover {
+    text-decoration: underline;
+}
+
+/* Delete Buttons */
+.delete-btn {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    margin-left: 1rem;
+    flex-shrink: 0;
+    align-self: center; /* Align button vertically in the center of the card */
+}
+
+.delete-btn:hover {
+    background-color: #c0392b;
+}
+
+.perm-delete-btn {
+    background-color: #922b21; /* A darker, more dangerous red */
+}
+
+.perm-delete-btn:hover {
+    background-color: #641e16;
+}
+
+
+/* Notes Section */
+.notes-section {
+    margin-top: 0.75rem;
+    cursor: pointer;
+}
+
+.notes-text {
+    font-size: 0.9rem;
+    color: #333;
+    white-space: pre-wrap; /* Respect newlines in the note */
+    word-break: break-word;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    border: 1px solid transparent; /* Prevents layout shift on hover */
+}
+
+.notes-section:hover .notes-text {
+    background-color: #f4f7f6; /* A very light grey */
+    border-color: #e1e8ed;
+}
+
+.notes-text.placeholder {
+    color: #657786;
+    font-style: italic;
+}
+
+.notes-textarea {
+    width: 100%;
+    min-height: 80px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    padding: 0.5rem;
+    border: 1px solid #25D366;
+    border-radius: 4px;
+    resize: vertical;
+}
+
+/* A utility class to hide elements, used for the debug notice and details view */
+.hidden {
+    display: none;
+}
+
+/* Style for items being dragged */
+.dragging {
+    opacity: 0.5;
+    background: #d4eaf7; /* A light blue to indicate movement */
+}
+
+/* Serial Numbers */
+.sl-number {
+    font-weight: bold;
+    color: #657786;
+    margin-right: 0.5rem;
+    align-self: center;
+    flex-shrink: 0;
+}

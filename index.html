@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Link Playlist Saver</title>
+
+    <!-- 
+      Open Graph Protocol (OGP) Meta Tags 
+      These tags define the preview for your MAIN website URL when shared.
+      For per-playlist previews, a server-side solution is required. See the explanation below.
+    -->
+    <meta property="og:title" content="Link Playlist Saver - Organize Your Links" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://your-website-url.com/" />
+    <!-- IMPORTANT: Replace this with a URL to an actual image you host. -->
+    <meta property="og:image" content="https://your-website-url.com/images/preview.png" />
+    <meta property="og:description" content="Create, save, and share playlists of your favorite web links from YouTube, Instagram, and more!" />
+    <meta property="og:site_name" content="Link Playlist Saver" />
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>Link Playlist Saver</h1>
+        <p>Build and save playlists of your favorite links.</p>
+    </header>
+
+    <main class="container">
+        <section class="playlist-manager">
+            <h2>My Playlists</h2>
+            <div class="create-playlist">
+                <input type="text" id="new-playlist-name" placeholder="New playlist name...">
+                <button id="create-playlist-btn">Create Playlist</button>
+            </div>
+            <ul id="playlist-list">
+                <!-- Playlists will be dynamically inserted here -->
+            </ul>
+        </section>
+
+        <section id="playlist-details" class="playlist-details-view hidden">
+            <h2 id="current-playlist-title"></h2>
+            <div class="add-link">
+                <input type="url" id="new-link-url" placeholder="https://www.youtube.com/watch?v=...">
+                <button id="add-link-btn">Add Link</button>
+            </div>
+            <ul id="link-list">
+                <!-- Links for the selected playlist will be here -->
+            </ul>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
