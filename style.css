@@ -14,12 +14,14 @@ body {
 
 /* Header */
 header {
-    background-color: #075E54; /* WhatsApp Green */
+    background-color: #075E54;
+    /* WhatsApp Green */
     color: #fff;
-    position: relative; /* For positioning header button */
+    position: relative;
+    /* For positioning header button */
     text-align: center;
     padding: 1.5rem 1rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 header h1 {
@@ -42,7 +44,7 @@ header h1 {
     background: #fff;
     padding: 1.5rem;
     border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
     display: flex;
     flex-direction: column;
 }
@@ -62,10 +64,12 @@ header h1 {
 }
 
 h2 {
-    border-bottom: 2px solid #ECE5DD; /* WhatsApp Chat BG */
+    border-bottom: 2px solid #ECE5DD;
+    /* WhatsApp Chat BG */
     padding-bottom: 0.5rem;
     margin-bottom: 1rem;
-    color: #128C7E; /* WhatsApp Teal */
+    color: #128C7E;
+    /* WhatsApp Teal */
 }
 
 .create-playlist,
@@ -76,7 +80,8 @@ h2 {
 }
 
 /* Inputs and Buttons */
-input[type="text"], input[type="url"] {
+input[type="text"],
+input[type="url"] {
     flex-grow: 1;
     padding: 0.75rem;
     border: 1px solid #ccc;
@@ -84,7 +89,8 @@ input[type="text"], input[type="url"] {
     font-size: 1rem;
 }
 
-input[type="text"]:focus, input[type="url"]:focus {
+input[type="text"]:focus,
+input[type="url"]:focus {
     outline: none;
     border-color: #25D366;
     box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.2);
@@ -93,7 +99,8 @@ input[type="text"]:focus, input[type="url"]:focus {
 button {
     padding: 0.75rem 1.5rem;
     border: none;
-    background-color: #25D366; /* WhatsApp Action Green */
+    background-color: #25D366;
+    /* WhatsApp Action Green */
     color: white;
     border-radius: 5px;
     cursor: pointer;
@@ -103,7 +110,8 @@ button {
 }
 
 button:hover {
-    background-color: #128C7E; /* WhatsApp Teal */
+    background-color: #128C7E;
+    /* WhatsApp Teal */
 }
 
 button:disabled {
@@ -113,7 +121,8 @@ button:disabled {
 }
 
 /* Lists */
-#playlist-list, #link-list {
+#playlist-list,
+#link-list {
     list-style: none;
     flex-grow: 1;
     overflow-y: auto;
@@ -129,7 +138,8 @@ button:disabled {
     align-items: center;
 }
 
-#playlist-list li:hover, #playlist-list li.active {
+#playlist-list li:hover,
+#playlist-list li.active {
     background-color: #ECE5DD;
 }
 
@@ -172,7 +182,8 @@ button:disabled {
     border-radius: 8px;
     margin-bottom: 1rem;
     padding: 1rem;
-    padding-left: 0.5rem; /* Make space for serial number */
+    padding-left: 0.5rem;
+    /* Make space for serial number */
     display: flex;
     gap: 1rem;
     align-items: flex-start;
@@ -181,7 +192,7 @@ button:disabled {
 }
 
 .link-card:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 /* Styles for cards that do not have a thumbnail image */
@@ -193,18 +204,25 @@ button:disabled {
 .link-card.no-thumbnail .link-content h4 {
     /* Make the title more prominent as it's the main visual element */
     font-size: 1.2rem;
-    color: #128C7E; /* Use the theme's teal color for emphasis */
+    color: #128C7E;
+    /* Use the theme's teal color for emphasis */
     margin-bottom: 0.25rem;
 }
 
-.link-card img {
-    width: 100px;
-    height: 100px;
+/* Styles for link thumbnail */
+.link-thumbnail {
+    width: 80px;
+    height: 80px;
     object-fit: cover;
     border-radius: 8px;
     flex-shrink: 0;
+    margin-right: 0.5rem;
     border: 1px solid #eee;
-    background-color: #f4f7f6; /* Placeholder color */
+    background-color: #f4f7f6;
+}
+
+.link-card.no-thumbnail img {
+    display: none;
 }
 
 .link-card .link-content {
@@ -212,7 +230,8 @@ button:disabled {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-    min-width: 0; /* Important for flexbox text wrapping */
+    min-width: 0;
+    /* Important for flexbox text wrapping */
 }
 
 .link-card .link-content h4.editable-title {
@@ -220,19 +239,23 @@ button:disabled {
     transition: background-color 0.2s;
     border-radius: 4px;
     padding: 0.25rem;
-    margin: -0.25rem; /* Counteract padding to maintain layout */
+    margin: -0.25rem;
+    /* Counteract padding to maintain layout */
 }
 
 .link-card .link-content h4.editable-title:hover {
-    background-color: #ECE5DD; /* Use the same hover as playlist items */
+    background-color: #ECE5DD;
+    /* Use the same hover as playlist items */
 }
 
 .edit-title-input {
     width: 100%;
     font-size: 1.1rem;
-    font-weight: bold; /* Match h4 */
+    font-weight: bold;
+    /* Match h4 */
     padding: 0.25rem;
-    margin: -0.25rem; /* Match h4 */
+    margin: -0.25rem;
+    /* Match h4 */
     border: 1px solid #25D366;
     border-radius: 4px;
     font-family: inherit;
@@ -268,7 +291,8 @@ button:disabled {
     font-size: 0.8rem;
     margin-left: 1rem;
     flex-shrink: 0;
-    align-self: center; /* Align button vertically in the center of the card */
+    align-self: center;
+    /* Align button vertically in the center of the card */
 }
 
 .delete-btn:hover {
@@ -276,7 +300,8 @@ button:disabled {
 }
 
 .perm-delete-btn {
-    background-color: #922b21; /* A darker, more dangerous red */
+    background-color: #922b21;
+    /* A darker, more dangerous red */
 }
 
 .perm-delete-btn:hover {
@@ -293,16 +318,19 @@ button:disabled {
 .notes-text {
     font-size: 0.9rem;
     color: #333;
-    white-space: pre-wrap; /* Respect newlines in the note */
+    white-space: pre-wrap;
+    /* Respect newlines in the note */
     word-break: break-word;
     padding: 0.5rem;
     border-radius: 4px;
     transition: background-color 0.2s;
-    border: 1px solid transparent; /* Prevents layout shift on hover */
+    border: 1px solid transparent;
+    /* Prevents layout shift on hover */
 }
 
 .notes-section:hover .notes-text {
-    background-color: #f4f7f6; /* A very light grey */
+    background-color: #f4f7f6;
+    /* A very light grey */
     border-color: #e1e8ed;
 }
 
@@ -330,7 +358,8 @@ button:disabled {
 /* Style for items being dragged */
 .dragging {
     opacity: 0.5;
-    background: #d4eaf7; /* A light blue to indicate movement */
+    background: #d4eaf7;
+    /* A light blue to indicate movement */
 }
 
 /* Serial Numbers */
@@ -339,5 +368,39 @@ button:disabled {
     color: #657786;
     margin-right: 0.5rem;
     align-self: center;
+
     flex-shrink: 0;
+}
+
+/* Priority Dropdown */
+/* Priority Dropdown & Move Playlist Dropdown */
+.priority-select,
+.move-playlist-select {
+    padding: 0.25rem;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    background-color: #f8f9fa;
+    cursor: pointer;
+    font-weight: bold;
+    color: #333;
+    align-self: center;
+    flex-shrink: 0;
+}
+
+.priority-select {
+    margin-right: 0.5rem;
+}
+
+.move-playlist-select {
+    margin-right: 0.5rem;
+    max-width: 150px;
+    /* Prevent it from taking too much space */
+}
+
+.priority-select:focus,
+.move-playlist-select:focus {
+    outline: none;
+
+
+    border-color: #25D366;
 }

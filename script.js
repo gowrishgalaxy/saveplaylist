@@ -148,15 +148,50 @@ document.addEventListener('DOMContentLoaded', () => {
             li.draggable = true;
             li.dataset.index = index;
 
-            // Add Serial Number
-            const slNumber = document.createElement('span');
-            slNumber.textContent = `${index + 1}.`;
-            slNumber.classList.add('sl-number');
-            li.appendChild(slNumber);
+            // Add Priority Dropdown
+            const prioritySelect = document.createElement('select');
+            prioritySelect.classList.add('priority-select');
+            prioritySelect.title = 'Change priority';
 
-            // Since we are not fetching thumbnails, always add the 'no-thumbnail' class
-            // for consistent styling that emphasizes the title.
-            li.classList.add('no-thumbnail');
+            // Populate options
+            activePlaylist.links.forEach((_, i) => {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i + 1;
+                if (i === index) option.selected = true;
+                prioritySelect.appendChild(option);
+            });
+
+            // Handle change
+            prioritySelect.addEventListener('change', (e) => {
+                const newIndex = parseInt(e.target.value, 10);
+                if (newIndex !== index) {
+                    const [movedItem] = activePlaylist.links.splice(index, 1);
+                    activePlaylist.links.splice(newIndex, 0, movedItem);
+                    saveAndRender();
+                }
+            });
+
+            // Prevent drag start when clicking the dropdown
+            prioritySelect.addEventListener('click', (e) => e.stopPropagation());
+
+            li.appendChild(prioritySelect);
+
+            // Render Image if available
+            if (linkData.image) {
+                const img = document.createElement('img');
+                img.src = linkData.image;
+                img.alt = 'Link Thumbnail';
+                img.classList.add('link-thumbnail');
+                // Fallback for broken images
+                img.onerror = () => {
+                    img.style.display = 'none';
+                    li.classList.add('no-thumbnail');
+                };
+                li.appendChild(img);
+            } else {
+                li.classList.add('no-thumbnail');
+            }
 
             // Create a container for the text content
             const contentDiv = document.createElement('div');
@@ -243,6 +278,49 @@ document.addEventListener('DOMContentLoaded', () => {
             // --- Action Buttons ---
             const buttonContainer = document.createElement('div');
             buttonContainer.classList.add('link-actions');
+
+            // --- Move to Playlist Dropdown ---
+            // Only show if it's not the Recycle Bin (optional preference, but usually good)
+            if (activePlaylist.name !== RECYCLE_BIN_NAME) {
+                const moveSelect = document.createElement('select');
+                moveSelect.classList.add('move-playlist-select');
+                moveSelect.title = 'Move to another playlist';
+
+                playlists.forEach((p, pIndex) => {
+                    // Don't show Recycle Bin in this move list (use Delete for that)
+                    if (p.name === RECYCLE_BIN_NAME) return;
+
+                    const option = document.createElement('option');
+                    option.value = pIndex;
+                    option.textContent = p.name;
+                    if (p.name === activePlaylist.name) {
+                        option.selected = true;
+                    }
+                    moveSelect.appendChild(option);
+                });
+
+                moveSelect.addEventListener('change', (e) => {
+                    const targetPlaylistIndex = parseInt(e.target.value, 10);
+                    const targetPlaylist = playlists[targetPlaylistIndex];
+
+                    if (targetPlaylist && targetPlaylist.name !== activePlaylist.name) {
+                        if (confirm(`Move "${linkData.title}" to "${targetPlaylist.name}"?`)) {
+                            // Remove from current
+                            const [movedLink] = activePlaylist.links.splice(index, 1);
+                            // Add to target
+                            targetPlaylist.links.push(movedLink);
+                            saveAndRender();
+                        } else {
+                            // Revert selection if cancelled
+                            moveSelect.value = playlists.indexOf(activePlaylist);
+                        }
+                    }
+                });
+
+                // Prevent drag propagation
+                moveSelect.addEventListener('click', (e) => e.stopPropagation());
+                buttonContainer.appendChild(moveSelect);
+            }
 
             if (activePlaylist.name === RECYCLE_BIN_NAME) {
                 li.classList.add('deleted-item'); // For special styling
@@ -340,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
         saveAndRender();
     }
 
-    function addLink() {
+    async function addLink() {
         const linkUrl = newLinkUrlInput.value.trim();
         if (!linkUrl || !activePlaylist) return;
 
@@ -357,13 +435,42 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Directly add the link without fetching any metadata.
-        // The URL itself is used as the title.
+        // Validate URL protocol
+        let validUrl = linkUrl;
+        if (!validUrl.match(/^https?:\/\//i)) {
+            validUrl = 'http://' + validUrl;
+        }
+
+        // Visual feedback that we are processing
+        addLinkBtn.textContent = 'Adding...';
+        addLinkBtn.disabled = true;
+
+        let title = linkUrl;
+        let image = '';
+        let description = '';
+
+        try {
+            const response = await fetch(`/api/metadata?url=${encodeURIComponent(validUrl)}`);
+            if (response.ok) {
+                const data = await response.json();
+                title = data.title || linkUrl;
+                image = data.image || '';
+                description = data.description || '';
+            }
+        } catch (error) {
+            console.error('Failed to fetch metadata:', error);
+            // Fallback to defaults (set above)
+        } finally {
+            // Reset button state
+            addLinkBtn.textContent = 'Add Link';
+            addLinkBtn.disabled = false;
+        }
+
         activePlaylist.links.push({
-            url: linkUrl,
-            title: linkUrl,
-            description: '',
-            image: '', // No image
+            url: validUrl,
+            title: title,
+            description: description,
+            image: image,
             notes: ''
         });
 
