@@ -460,6 +460,15 @@ button:disabled {
     box-shadow: 0 0 2px rgba(0,0,0,0.1);
 }
 
+.note-content a {
+    color: #128C7E;
+    text-decoration: underline;
+}
+
+.note-content a:hover {
+    color: #075E54;
+}
+
 .edit-note-input {
     flex-grow: 1;
     width: 100%;

@@ -294,7 +294,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Note Text
                 const noteContent = document.createElement('span');
                 noteContent.classList.add('note-content');
-                noteContent.textContent = noteObj.text;
+                
+                // Detect URLs and create clickable links
+                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                const textParts = noteObj.text.split(urlRegex);
+
+                textParts.forEach(part => {
+                    if (part.match(urlRegex)) {
+                        const link = document.createElement('a');
+                        link.href = part;
+                        link.textContent = part;
+                        link.target = '_blank';
+                        link.rel = 'noopener noreferrer';
+                        link.addEventListener('click', e => e.stopPropagation()); // Prevent entering edit mode when clicking link
+                        noteContent.appendChild(link);
+                    } else {
+                        noteContent.appendChild(document.createTextNode(part));
+                    }
+                });
+
                     noteContent.title = 'Click to edit note';
                     noteContent.addEventListener('click', (e) => {
                         e.stopPropagation();
