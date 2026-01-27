@@ -357,7 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
             addNoteBtn.classList.add('add-note-btn');
             addNoteBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                linkData.notes.push({ text: 'New note' });
+                linkData.notes.push({ text: '' });
                 saveAndRender();
             });
             notesContainer.appendChild(addNoteBtn);
