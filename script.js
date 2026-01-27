@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let playlists = [];
     let activePlaylist = null;
     const RECYCLE_BIN_NAME = 'Recycle Bin';
+    const DELETED_NOTES_PLAYLIST_NAME = 'Deleted Notes';
 
     // --- Data Persistence ---
     function savePlaylists() {
@@ -28,11 +29,16 @@ document.addEventListener('DOMContentLoaded', () => {
             playlists = loaded.map(playlist => {
                 playlist.links = playlist.links.map(link => {
                     if (typeof link === 'string') {
-                        return { url: link, title: link, description: '', image: '', notes: '' };
+                        return { url: link, title: link, description: '', image: '', notes: [] };
                     }
-                    // For older objects that might be missing 'notes', add it.
+                    // Migration: Convert 'notes' to array of objects
                     if (!link.hasOwnProperty('notes')) {
-                        link.notes = '';
+                        link.notes = [];
+                    } else if (typeof link.notes === 'string') {
+                        // Convert existing string note to array if it's not empty
+                        link.notes = link.notes ? [{ text: link.notes }] : [];
+                    } else if (!Array.isArray(link.notes)) {
+                        link.notes = [];
                     }
                     return link;
                 });
@@ -44,6 +50,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function ensureRecycleBinExists() {
         if (!playlists.some(p => p.name === RECYCLE_BIN_NAME)) {
             playlists.push({ name: RECYCLE_BIN_NAME, links: [] });
+        }
+        if (!playlists.some(p => p.name === DELETED_NOTES_PLAYLIST_NAME)) {
+            playlists.push({ name: DELETED_NOTES_PLAYLIST_NAME, links: [] });
         }
     }
 
@@ -109,7 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // The Recycle Bin playlist cannot be deleted or dragged
-            if (playlist.name === RECYCLE_BIN_NAME) {
+            if (playlist.name === RECYCLE_BIN_NAME || playlist.name === DELETED_NOTES_PLAYLIST_NAME) {
                 li.classList.add('recycle-bin-playlist');
             } else {
                 li.draggable = true;
@@ -242,35 +251,117 @@ document.addEventListener('DOMContentLoaded', () => {
             const notesContainer = document.createElement('div');
             notesContainer.classList.add('notes-section');
 
-            const notesText = document.createElement('p');
-            notesText.classList.add('notes-text');
-            if (linkData.notes) {
-                notesText.textContent = linkData.notes;
-                notesText.title = 'Click to edit note';
-            } else {
-                notesText.textContent = 'Click to add a note...';
-                notesText.classList.add('placeholder');
-            }
+            const notesHeader = document.createElement('h5');
+            notesHeader.textContent = 'Notes';
+            notesHeader.style.marginBottom = '0.5rem';
+            notesHeader.style.color = '#128C7E';
+            notesContainer.appendChild(notesHeader);
 
-            notesContainer.addEventListener('click', () => {
-                // Prevent creating multiple textareas
-                if (notesContainer.querySelector('textarea')) return;
+            const notesList = document.createElement('ul');
+            notesList.classList.add('notes-list');
 
-                const notesTextarea = document.createElement('textarea');
-                notesTextarea.value = linkData.notes || '';
-                notesTextarea.placeholder = 'Type your notes here...';
-                notesTextarea.classList.add('notes-textarea');
+            // Ensure notes is an array
+            if (!Array.isArray(linkData.notes)) linkData.notes = [];
 
-                notesTextarea.addEventListener('blur', () => {
-                    linkData.notes = notesTextarea.value.trim();
-                    saveAndRender(); // This will save and re-render the view
+            linkData.notes.forEach((noteObj, noteIndex) => {
+                const noteLi = document.createElement('li');
+                noteLi.classList.add('note-item');
+
+                // Priority Dropdown for Note
+                const notePrioritySelect = document.createElement('select');
+                notePrioritySelect.classList.add('note-priority-select');
+                notePrioritySelect.title = 'Change note order';
+                
+                linkData.notes.forEach((_, i) => {
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.textContent = i + 1;
+                    if (i === noteIndex) option.selected = true;
+                    notePrioritySelect.appendChild(option);
                 });
 
-                notesContainer.replaceChild(notesTextarea, notesText);
-                notesTextarea.focus();
-            });
+                notePrioritySelect.addEventListener('change', (e) => {
+                    const newIndex = parseInt(e.target.value, 10);
+                    if (newIndex !== noteIndex) {
+                        const [movedNote] = linkData.notes.splice(noteIndex, 1);
+                        linkData.notes.splice(newIndex, 0, movedNote);
+                        saveAndRender();
+                    }
+                });
+                notePrioritySelect.addEventListener('click', e => e.stopPropagation());
+                noteLi.appendChild(notePrioritySelect);
 
-            notesContainer.appendChild(notesText);
+                // Note Text
+                const noteContent = document.createElement('span');
+                noteContent.classList.add('note-content');
+                noteContent.textContent = noteObj.text;
+                    noteContent.title = 'Click to edit note';
+                    noteContent.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const inputEl = document.createElement('textarea');
+                        inputEl.value = noteObj.text;
+                        inputEl.classList.add('edit-note-input');
+                        
+                        const saveNote = () => {
+                            const newText = inputEl.value.trim();
+                            noteObj.text = newText;
+                            saveAndRender();
+                        };
+
+                        inputEl.addEventListener('blur', saveNote);
+                        inputEl.addEventListener('click', e => e.stopPropagation());
+                        
+                        noteLi.replaceChild(inputEl, noteContent);
+                        inputEl.focus();
+                    });
+                noteLi.appendChild(noteContent);
+
+                // Delete Note Button (Moves to Deleted Notes Playlist)
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = '×';
+                deleteBtn.classList.add('delete-note-btn');
+                deleteBtn.title = 'Move to Deleted Notes';
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (confirm('Move this note to Deleted Notes playlist?')) {
+                        linkData.notes.splice(noteIndex, 1);
+                        
+                        let deletedNotesPlaylist = playlists.find(p => p.name === DELETED_NOTES_PLAYLIST_NAME);
+                        if (!deletedNotesPlaylist) {
+                            deletedNotesPlaylist = { name: DELETED_NOTES_PLAYLIST_NAME, links: [] };
+                            playlists.push(deletedNotesPlaylist);
+                        }
+                        
+                        deletedNotesPlaylist.links.push({
+                            url: linkData.url,
+                            title: noteObj.text,
+                            description: `Note from: ${linkData.title}`,
+                            image: linkData.image,
+                            notes: [],
+                            originalPlaylistName: activePlaylist.name,
+                            originalLinkUrl: linkData.url,
+                            isDeletedNote: true
+                        });
+                        saveAndRender();
+                    }
+                });
+                noteLi.appendChild(deleteBtn);
+
+                notesList.appendChild(noteLi);
+            });
+            notesContainer.appendChild(notesList);
+
+            // Add Note Button
+            const addNoteBtn = document.createElement('button');
+            addNoteBtn.textContent = '+ Add Note';
+            addNoteBtn.classList.add('add-note-btn');
+            addNoteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                linkData.notes.push({ text: 'New note' });
+                saveAndRender();
+            });
+            notesContainer.appendChild(addNoteBtn);
+
             contentDiv.appendChild(notesContainer);
 
             li.appendChild(contentDiv);
@@ -280,15 +371,15 @@ document.addEventListener('DOMContentLoaded', () => {
             buttonContainer.classList.add('link-actions');
 
             // --- Move to Playlist Dropdown ---
-            // Only show if it's not the Recycle Bin (optional preference, but usually good)
-            if (activePlaylist.name !== RECYCLE_BIN_NAME) {
+            // Only show if it's not a system playlist
+            if (activePlaylist.name !== RECYCLE_BIN_NAME && activePlaylist.name !== DELETED_NOTES_PLAYLIST_NAME) {
                 const moveSelect = document.createElement('select');
                 moveSelect.classList.add('move-playlist-select');
                 moveSelect.title = 'Move to another playlist';
 
                 playlists.forEach((p, pIndex) => {
-                    // Don't show Recycle Bin in this move list (use Delete for that)
-                    if (p.name === RECYCLE_BIN_NAME) return;
+                    // Don't show system playlists in this move list
+                    if (p.name === RECYCLE_BIN_NAME || p.name === DELETED_NOTES_PLAYLIST_NAME) return;
 
                     const option = document.createElement('option');
                     option.value = pIndex;
@@ -322,7 +413,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 buttonContainer.appendChild(moveSelect);
             }
 
-            if (activePlaylist.name === RECYCLE_BIN_NAME) {
+            if (activePlaylist.name === RECYCLE_BIN_NAME || activePlaylist.name === DELETED_NOTES_PLAYLIST_NAME) {
                 li.classList.add('deleted-item'); // For special styling
 
                 // Display original playlist info
@@ -382,8 +473,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function deletePlaylist(index) {
         const playlistToDelete = playlists[index];
-        if (playlistToDelete.name === RECYCLE_BIN_NAME) {
-            alert('The Recycle Bin playlist cannot be deleted.');
+        if (playlistToDelete.name === RECYCLE_BIN_NAME || playlistToDelete.name === DELETED_NOTES_PLAYLIST_NAME) {
+            alert('This system playlist cannot be deleted.');
             return;
         }
         if (!confirm(`Are you sure you want to delete the playlist "${playlistToDelete.name}"? Its links will be moved to the Recycle Bin.`)) {
@@ -471,7 +562,7 @@ document.addEventListener('DOMContentLoaded', () => {
             title: title,
             description: description,
             image: image,
-            notes: ''
+            notes: []
         });
 
         newLinkUrlInput.value = '';
@@ -481,8 +572,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function deleteLink(index) {
         if (!activePlaylist) return;
 
-        // If in recycle bin, it's a permanent delete
-        if (activePlaylist.name === RECYCLE_BIN_NAME) {
+        // If in recycle bin or deleted notes, it's a permanent delete
+        if (activePlaylist.name === RECYCLE_BIN_NAME || activePlaylist.name === DELETED_NOTES_PLAYLIST_NAME) {
             if (!confirm(`This will permanently delete the link. This action cannot be undone.\n\n"${activePlaylist.links[index].title}"`)) {
                 return;
             }
@@ -507,11 +598,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function restoreLink(indexInBin) {
-        const recycleBinPlaylist = playlists.find(p => p.name === RECYCLE_BIN_NAME);
-        if (!recycleBinPlaylist || !recycleBinPlaylist.links[indexInBin]) return;
+        if (!activePlaylist || !activePlaylist.links[indexInBin]) return;
 
-        // Remove the link from the recycle bin
-        const [linkToRestore] = recycleBinPlaylist.links.splice(indexInBin, 1);
+        // Remove the link from the current bin (Recycle Bin or Deleted Notes)
+        const [linkToRestore] = activePlaylist.links.splice(indexInBin, 1);
+        
+        // Handle Note Restoration
+        if (linkToRestore.isDeletedNote) {
+            const targetPlaylist = playlists.find(p => p.name === linkToRestore.originalPlaylistName);
+            if (targetPlaylist) {
+                const targetLink = targetPlaylist.links.find(l => l.url === linkToRestore.originalLinkUrl);
+                if (targetLink) {
+                    targetLink.notes.push({ text: linkToRestore.title });
+                    saveAndRender();
+                    return;
+                }
+            }
+            // If parent not found, fall through to restore as a regular link
+            delete linkToRestore.isDeletedNote;
+        }
+
         const originalName = linkToRestore.originalPlaylistName;
 
         // Clean up the object before restoring
@@ -520,7 +626,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!originalName) {
             // Fallback: if for some reason there's no original playlist name,
             // move it to the first available playlist that is not the bin.
-            const firstPlaylist = playlists.find(p => p.name !== RECYCLE_BIN_NAME);
+            const firstPlaylist = playlists.find(p => p.name !== RECYCLE_BIN_NAME && p.name !== DELETED_NOTES_PLAYLIST_NAME);
             if (firstPlaylist) {
                 firstPlaylist.links.push(linkToRestore);
             } else {
