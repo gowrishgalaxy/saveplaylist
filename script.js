@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const playlistDetailsView = document.getElementById('playlist-details');
     const currentPlaylistTitle = document.getElementById('current-playlist-title');
     const newLinkUrlInput = document.getElementById('new-link-url');
+    const newLinkTitleInput = document.getElementById('new-link-title');
     const addLinkBtn = document.getElementById('add-link-btn');
     const linkList = document.getElementById('link-list');
 
@@ -240,12 +241,14 @@ document.addEventListener('DOMContentLoaded', () => {
             contentDiv.appendChild(titleEl);
 
             // Create link element
-            const a = document.createElement('a');
-            a.href = linkData.url;
-            a.textContent = linkData.url;
-            a.target = '_blank'; // Open in new tab
-            a.rel = 'noopener noreferrer';
-            contentDiv.appendChild(a);
+            if (linkData.url) {
+                const a = document.createElement('a');
+                a.href = linkData.url;
+                a.textContent = linkData.url;
+                a.target = '_blank'; // Open in new tab
+                a.rel = 'noopener noreferrer';
+                contentDiv.appendChild(a);
+            }
 
             // --- Add Notes Section ---
             const notesContainer = document.createElement('div');
@@ -507,7 +510,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Add original playlist info before moving
                 linkToMove.originalPlaylistName = playlistToDelete.name;
                 // Prevent duplicates in the recycle bin
-                if (!recycleBinPlaylist.links.some(existingLink => existingLink.url === linkToMove.url)) {
+                if (!recycleBinPlaylist.links.some(existingLink => existingLink.url === linkToMove.url && existingLink.title === linkToMove.title)) {
                     recycleBinPlaylist.links.push(linkToMove);
                 }
             });
@@ -529,51 +532,63 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function addLink() {
         const linkUrl = newLinkUrlInput.value.trim();
-        if (!linkUrl || !activePlaylist) return;
+        const linkTitle = newLinkTitleInput.value.trim();
+        
+        if ((!linkUrl && !linkTitle) || !activePlaylist) return;
 
-        try {
-            new URL(linkUrl); // Basic URL validation
-        } catch (_) {
-            alert('Please enter a valid URL (e.g., https://www.example.com)');
-            return;
+        let validUrl = '';
+        if (linkUrl) {
+            validUrl = linkUrl;
+            if (!validUrl.match(/^https?:\/\//i)) {
+                validUrl = 'http://' + validUrl;
+            }
+            try {
+                new URL(validUrl); // Basic URL validation
+            } catch (_) {
+                alert('Please enter a valid URL (e.g., https://www.example.com)');
+                return;
+            }
         }
 
         // Check for duplicates
-        if (activePlaylist.links.some(link => link.url === linkUrl)) {
+        const isDuplicate = activePlaylist.links.some(link => {
+            if (validUrl) return link.url === validUrl;
+            return link.title === linkTitle && !link.url;
+        });
+
+        if (isDuplicate) {
             alert('This link already exists in the current playlist.');
             return;
-        }
-
-        // Validate URL protocol
-        let validUrl = linkUrl;
-        if (!validUrl.match(/^https?:\/\//i)) {
-            validUrl = 'http://' + validUrl;
         }
 
         // Visual feedback that we are processing
         addLinkBtn.textContent = 'Adding...';
         addLinkBtn.disabled = true;
 
-        let title = linkUrl;
+        let title = linkTitle || linkUrl;
         let image = '';
         let description = '';
 
-        try {
-            const response = await fetch(`/api/metadata?url=${encodeURIComponent(validUrl)}`);
-            if (response.ok) {
-                const data = await response.json();
-                title = data.title || linkUrl;
-                image = data.image || '';
-                description = data.description || '';
+        if (validUrl) {
+            try {
+                const response = await fetch(`/api/metadata?url=${encodeURIComponent(validUrl)}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    title = linkTitle || data.title || linkUrl;
+                    image = data.image || '';
+                    description = data.description || '';
+                }
+            } catch (error) {
+                console.error('Failed to fetch metadata:', error);
+                // Fallback to defaults (set above)
             }
-        } catch (error) {
-            console.error('Failed to fetch metadata:', error);
-            // Fallback to defaults (set above)
-        } finally {
-            // Reset button state
-            addLinkBtn.textContent = 'Add Link';
-            addLinkBtn.disabled = false;
+        } else {
+            title = linkTitle;
         }
+
+        // Reset button state
+        addLinkBtn.textContent = 'Add Link';
+        addLinkBtn.disabled = false;
 
         activePlaylist.links.push({
             url: validUrl,
@@ -584,6 +599,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         newLinkUrlInput.value = '';
+        newLinkTitleInput.value = '';
         saveAndRender();
     }
 
@@ -608,7 +624,7 @@ document.addEventListener('DOMContentLoaded', () => {
             deletedLink.originalPlaylistName = activePlaylist.name;
 
             // To prevent duplicates in the recycle bin
-            if (recycleBinPlaylist && !recycleBinPlaylist.links.some(link => link.url === deletedLink.url)) {
+            if (recycleBinPlaylist && !recycleBinPlaylist.links.some(link => link.url === deletedLink.url && link.title === deletedLink.title)) {
                 recycleBinPlaylist.links.push(deletedLink);
             }
         }
@@ -666,7 +682,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Add the link to the target playlist, preventing duplicates
-        if (!targetPlaylist.links.some(link => link.url === linkToRestore.url)) {
+        if (!targetPlaylist.links.some(link => link.url === linkToRestore.url && link.title === linkToRestore.title)) {
             targetPlaylist.links.push(linkToRestore);
         } else {
             alert(`Link "${linkToRestore.title}" already exists in "${targetPlaylist.name}" and was not restored.`);
@@ -686,6 +702,7 @@ document.addEventListener('DOMContentLoaded', () => {
     addLinkBtn.addEventListener('click', addLink);
     newPlaylistNameInput.addEventListener('keypress', (e) => e.key === 'Enter' && createPlaylist());
     newLinkUrlInput.addEventListener('keypress', (e) => e.key === 'Enter' && addLink());
+    newLinkTitleInput.addEventListener('keypress', (e) => e.key === 'Enter' && addLink());
 
     loadPlaylists();
     ensureRecycleBinExists();
