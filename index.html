@@ -34,6 +34,11 @@
                 <input type="text" id="new-playlist-name" placeholder="New playlist name...">
                 <button id="create-playlist-btn">Create Playlist</button>
             </div>
+            <div class="data-actions">
+                <button id="export-data-btn" type="button">Export Data</button>
+                <button id="import-data-btn" type="button">Import Data</button>
+                <input type="file" id="import-data-input" accept="application/json,.json" class="hidden">
+            </div>
             <ul id="playlist-list">
                 <!-- Playlists will be dynamically inserted here -->
             </ul>

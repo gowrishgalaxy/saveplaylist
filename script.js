@@ -2,6 +2,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Element Selectors ---
     const newPlaylistNameInput = document.getElementById('new-playlist-name');
     const createPlaylistBtn = document.getElementById('create-playlist-btn');
+    const exportDataBtn = document.getElementById('export-data-btn');
+    const importDataBtn = document.getElementById('import-data-btn');
+    const importDataInput = document.getElementById('import-data-input');
     const playlistList = document.getElementById('playlist-list');
 
     const playlistDetailsView = document.getElementById('playlist-details');
@@ -25,27 +28,119 @@ document.addEventListener('DOMContentLoaded', () => {
     function loadPlaylists() {
         const storedPlaylists = localStorage.getItem('linkPlaylists');
         if (storedPlaylists) {
-            const loaded = JSON.parse(storedPlaylists);
-            // Data migration for old string-based links to new object format
-            playlists = loaded.map(playlist => {
-                playlist.links = playlist.links.map(link => {
-                    if (typeof link === 'string') {
-                        return { url: link, title: link, description: '', image: '', notes: [] };
-                    }
-                    // Migration: Convert 'notes' to array of objects
-                    if (!link.hasOwnProperty('notes')) {
-                        link.notes = [];
-                    } else if (typeof link.notes === 'string') {
-                        // Convert existing string note to array if it's not empty
-                        link.notes = link.notes ? [{ text: link.notes }] : [];
-                    } else if (!Array.isArray(link.notes)) {
-                        link.notes = [];
-                    }
-                    return link;
-                });
-                return playlist;
-            });
+            playlists = normalizePlaylistsData(JSON.parse(storedPlaylists));
         }
+    }
+
+    function normalizePlaylistsData(rawPlaylists) {
+        if (!Array.isArray(rawPlaylists)) return [];
+
+        return rawPlaylists
+            .filter(playlist => playlist && typeof playlist.name === 'string')
+            .map(playlist => {
+                const normalizedLinks = Array.isArray(playlist.links) ? playlist.links : [];
+                return {
+                    name: playlist.name.trim(),
+                    links: normalizedLinks.map(link => {
+                        if (typeof link === 'string') {
+                            return { url: link, title: link, description: '', image: '', notes: [] };
+                        }
+                        if (!link || typeof link !== 'object') {
+                            return { url: '', title: 'Untitled', description: '', image: '', notes: [] };
+                        }
+
+                        const normalizedLink = {
+                            ...link,
+                            url: typeof link.url === 'string' ? link.url : '',
+                            title: typeof link.title === 'string' ? link.title : (link.url || 'Untitled'),
+                            description: typeof link.description === 'string' ? link.description : '',
+                            image: typeof link.image === 'string' ? link.image : ''
+                        };
+
+                        if (!normalizedLink.hasOwnProperty('notes')) {
+                            normalizedLink.notes = [];
+                        } else if (typeof normalizedLink.notes === 'string') {
+                            normalizedLink.notes = normalizedLink.notes ? [{ text: normalizedLink.notes }] : [];
+                        } else if (Array.isArray(normalizedLink.notes)) {
+                            normalizedLink.notes = normalizedLink.notes.map(note => {
+                                if (typeof note === 'string') return { text: note };
+                                if (note && typeof note.text === 'string') return note;
+                                return { text: '' };
+                            });
+                        } else {
+                            normalizedLink.notes = [];
+                        }
+
+                        return normalizedLink;
+                    })
+                };
+            })
+            .filter(playlist => playlist.name);
+    }
+
+    function exportData() {
+        const exportPayload = {
+            exportedAt: new Date().toISOString(),
+            playlists: playlists
+        };
+        const fileBlob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: 'application/json' });
+        const blobUrl = URL.createObjectURL(fileBlob);
+        const downloadLink = document.createElement('a');
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+
+        downloadLink.href = blobUrl;
+        downloadLink.download = `saveplaylist-backup-${timestamp}.json`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        URL.revokeObjectURL(blobUrl);
+    }
+
+    function importData(file) {
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const importedRaw = JSON.parse(event.target.result);
+                const importedPlaylistsRaw = Array.isArray(importedRaw) ? importedRaw : importedRaw.playlists;
+                const normalized = normalizePlaylistsData(importedPlaylistsRaw);
+
+                if (!normalized.length) {
+                    alert('No valid playlists found in the selected file.');
+                    return;
+                }
+
+                if (!confirm('Import data will replace your current playlists. Continue?')) {
+                    return;
+                }
+
+                const previousActiveName = activePlaylist ? activePlaylist.name : null;
+                playlists = normalized;
+                ensureRecycleBinExists();
+
+                if (previousActiveName) {
+                    activePlaylist = playlists.find(p => p.name === previousActiveName) || null;
+                } else {
+                    activePlaylist = null;
+                }
+
+                saveAndRender();
+                alert('Data imported successfully.');
+            } catch (error) {
+                console.error('Import failed:', error);
+                alert('Unable to import file. Please select a valid JSON backup.');
+            } finally {
+                importDataInput.value = '';
+            }
+        };
+
+        reader.onerror = () => {
+            alert('Failed to read the selected file.');
+            importDataInput.value = '';
+        };
+
+        reader.readAsText(file);
     }
 
     function ensureRecycleBinExists() {
@@ -700,6 +795,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Event Listeners & Initial Load ---
     createPlaylistBtn.addEventListener('click', createPlaylist);
     addLinkBtn.addEventListener('click', addLink);
+    exportDataBtn.addEventListener('click', exportData);
+    importDataBtn.addEventListener('click', () => importDataInput.click());
+    importDataInput.addEventListener('change', (e) => importData(e.target.files[0]));
     newPlaylistNameInput.addEventListener('keypress', (e) => e.key === 'Enter' && createPlaylist());
     newLinkUrlInput.addEventListener('keypress', (e) => e.key === 'Enter' && addLink());
     newLinkTitleInput.addEventListener('keypress', (e) => e.key === 'Enter' && addLink());
